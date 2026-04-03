@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Weather App</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container mt-4">
+    <nav class="navbar navbar-dark bg-dark rounded">
+        <span class="navbar-brand">Weather App</span>
+
+        <div th:if="${user != null}">
+            <span th:text="${user.login}" class="text-white me-3"></span>
+            <form th:action="@{/logout}" method="post" class="d-inline">
+                <button class="btn btn-outline-light btn-sm">Logout</button>
+            </form>
+
+        </div>
+
+        <div th:unless="${user != null}">
+            <a th:href="@{/login}" class="btn btn-outline-light me-2">Войти</a>
+            <a th:href="@{/register}" class="btn btn-light">Регистрация</a>
+
+        </div>
+    </nav>
+
+    <form th:action="@{/search}" method="get" class="my-3">
+        <input type="text" name="city" class="form-control" placeholder="Поиск города..." required>
+        <button type="submit" class="btn btn-primary mt-2">Найти</button>
+    </form>
+
+    <div class="row" th:each="item : ${locations}">
+        <div class="col-md-4 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title" th:text="${item.location.name}"></h5>
+                    <p class="card-text" th:text="${item.weatherDto.main.temperature} + '°C'"></p>
+                    <form th:action="@{/delete-location}" method="post">
+                        <input type="hidden" name="locationId" th:value="${item.location.id}">
+                        <button class="btn btn-danger btn-sm">Удалить</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
