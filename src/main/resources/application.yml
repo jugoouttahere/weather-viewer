@@ -1,0 +1,23 @@
+spring:
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/weather_db
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    open-in-view: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+hibernate:
+  dialect: org.hibernate.dialect.PostgreSQLDialect
+
+openweather:
+  api:
+    key: ${OPENWEATHER_KEY}
+    geo: http://api.openweathermap.org/geo/1.0/direct?q=%s&limit=5&appid=%s
+    weather: https://api.openweathermap.org/data/2.5/weather?lat=%s&lon=%s&appid=%s&units=metric&lang=ru
+
+cookie:
+  max-age: 86400
