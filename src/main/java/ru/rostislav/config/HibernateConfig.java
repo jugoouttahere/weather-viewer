@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.orm.hibernate5.HibernateTransactionManager;
 import org.springframework.orm.hibernate5.LocalSessionFactoryBean;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
@@ -13,6 +14,7 @@ import javax.sql.DataSource;
 import java.util.Properties;
 
 @Configuration
+@EnableScheduling
 @EnableTransactionManagement
 public class HibernateConfig {
 
@@ -31,11 +33,13 @@ public class HibernateConfig {
     @Value("${hibernate.dialect}")
     private String hibernateDialect;
 
+    private static final String PACKAGES_TO_SCAN = "ru.rostislav.model";
+
     @Bean
     public LocalSessionFactoryBean sessionFactory() {
         LocalSessionFactoryBean sessionFactory = new LocalSessionFactoryBean();
         sessionFactory.setDataSource(dataSource());
-        sessionFactory.setPackagesToScan("ru.rostislav.model");
+        sessionFactory.setPackagesToScan(PACKAGES_TO_SCAN);
         sessionFactory.setHibernateProperties(hibernateProperties());
 
         return sessionFactory;
@@ -53,13 +57,12 @@ public class HibernateConfig {
     }
 
     @Bean
-    public PlatformTransactionManager hibernateTransactionManager() {
+    public PlatformTransactionManager hibernateTransactionManager(LocalSessionFactoryBean sessionFactory) {
         HibernateTransactionManager transactionManager = new HibernateTransactionManager();
-        transactionManager.setSessionFactory(sessionFactory().getObject());
+        transactionManager.setSessionFactory(sessionFactory.getObject());
 
         return transactionManager;
     }
-
 
     private Properties hibernateProperties() {
         Properties properties = new Properties();

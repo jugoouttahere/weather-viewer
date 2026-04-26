@@ -12,11 +12,11 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class SessionService {
 
     private final SessionRepository sessionRepository;
 
+    @Transactional
     public Session createSession(User user) {
         Session session = new Session(
                 UUID.randomUUID(),
@@ -27,20 +27,17 @@ public class SessionService {
         return session;
     }
 
+    @Transactional(readOnly = true)
     public Session getSession(UUID id) {
         Session session = sessionRepository.findById(id);
         if (session == null) {
             return null;
         }
 
-        if (session.getExpiresAt().isBefore(LocalDateTime.now())) {
-            sessionRepository.delete(id);
-            return null;
-        }
-
         return session;
     }
 
+    @Transactional
     public void deleteSession(UUID id) {
         sessionRepository.delete(id);
     }

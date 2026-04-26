@@ -7,7 +7,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import ru.rostislav.dto.LocationDto;
+import ru.rostislav.dto.location.LocationDto;
+import ru.rostislav.exception.NullUserException;
 import ru.rostislav.model.Location;
 import ru.rostislav.model.User;
 import ru.rostislav.service.LocationService;
@@ -24,11 +25,7 @@ public class LocationController {
     public final OpenWeatherService openWeatherService;
 
     @GetMapping("/search")
-    public String search(@RequestParam String city, HttpServletRequest request, Model model) {
-        User user = getCurrentUser(request);
-        if (user == null) {
-            return "redirect:/login";
-        }
+    public String search(@RequestParam String city, Model model) {
         List<LocationDto> locations = openWeatherService.getLocations(city);
         model.addAttribute("cities", locations);
         model.addAttribute("searchCity", city);
@@ -38,9 +35,6 @@ public class LocationController {
     @PostMapping("/add-location")
     public String addLocation(@RequestParam String name, @RequestParam BigDecimal lat, @RequestParam BigDecimal lon, HttpServletRequest request) {
         User user = getCurrentUser(request);
-        if (user == null) {
-            return "redirect:/login";
-        }
         Location location = new Location(name, user, lat, lon);
         locationService.addLocation(location);
         return "redirect:/";
@@ -49,9 +43,6 @@ public class LocationController {
     @PostMapping("/delete-location")
     public String deleteLocation(@RequestParam Integer locationId, HttpServletRequest request) {
         User user = getCurrentUser(request);
-        if (user == null) {
-            return "redirect:/login";
-        }
         List<Location> userLocations = locationService.getUserLocations(user);
         boolean owns = userLocations.stream().anyMatch(loc -> loc.getId().equals(locationId));
         if (owns) {
@@ -61,6 +52,10 @@ public class LocationController {
     }
 
     private User getCurrentUser(HttpServletRequest request) {
-        return (User) request.getAttribute("user");
+        User user = (User) request.getAttribute("user");
+        if (user == null) {
+            throw new NullUserException("Пользователь не найден");
+        }
+        return user;
     }
 }

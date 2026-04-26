@@ -11,6 +11,7 @@ import ru.rostislav.model.User;
 import ru.rostislav.service.SessionService;
 
 import java.io.IOException;
+import java.util.Set;
 import java.util.UUID;
 
 @Component
@@ -18,6 +19,7 @@ import java.util.UUID;
 public class AuthFilter implements Filter {
 
     private final SessionService sessionService;
+    private final Set<String> uris = Set.of("/login", "/register", "/logout", "/css/", "/js/", "/images/");
 
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
@@ -26,8 +28,7 @@ public class AuthFilter implements Filter {
 
         String uri = request.getRequestURI();
 
-        if (uri.startsWith("/login") || uri.startsWith("/register") || uri.startsWith("/logout") ||
-                uri.startsWith("/css/") || uri.startsWith("/js/") || uri.startsWith("/images/")) {
+        if (uris.stream().anyMatch(uri::startsWith)) {
             filterChain.doFilter(servletRequest, servletResponse);
             return;
         }

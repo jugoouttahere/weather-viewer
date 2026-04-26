@@ -1,9 +1,9 @@
 package ru.rostislav.controller;
 
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.CookieValue;
@@ -11,30 +11,24 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import ru.rostislav.dto.LocationWeatherDto;
-import ru.rostislav.dto.WeatherDto;
-import ru.rostislav.model.Location;
 import ru.rostislav.model.Session;
 import ru.rostislav.model.User;
 import ru.rostislav.service.LocationService;
-import ru.rostislav.service.OpenWeatherService;
 import ru.rostislav.service.SessionService;
 import ru.rostislav.service.UserService;
+import ru.rostislav.utils.CookieUtils;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Controller
 @RequiredArgsConstructor
 public class UserController {
 
-    private static final String COOKIE_NAME = "sessionId";
-    private static final int COOKIE_MAX_AGE = 86400;
-
     private final UserService userService;
     private final SessionService sessionService;
     private final LocationService locationService;
-    private final OpenWeatherService openWeatherService;
 
     @GetMapping("/login")
     public String loginPage(HttpServletRequest request) {
@@ -48,16 +42,11 @@ public class UserController {
     public String login(@RequestParam String login, @RequestParam String password, HttpServletResponse response, Model model) {
         try {
             Session session = userService.login(login, password);
-
-            Cookie cookie = new Cookie(COOKIE_NAME, session.getId().toString());
-            cookie.setHttpOnly(true);
-            cookie.setPath("/");
-            cookie.setMaxAge(COOKIE_MAX_AGE);
-
-            response.addCookie(cookie);
+            response.addCookie(CookieUtils.createCookie(session));
             return "redirect:/";
         } catch (IllegalArgumentException e) {
             model.addAttribute("error", e.getMessage());
+            log.error("Login error on user {}: ", login, e);
             return "login";
         }
     }
@@ -74,27 +63,18 @@ public class UserController {
     public String register(@RequestParam String login, @RequestParam String password, HttpServletResponse response, Model model) {
         try {
             Session session = userService.register(login, password);
-
-            Cookie cookie = new Cookie(COOKIE_NAME, session.getId().toString());
-            cookie.setHttpOnly(true);
-            cookie.setPath("/");
-            cookie.setMaxAge(COOKIE_MAX_AGE);
-
-            response.addCookie(cookie);
+            response.addCookie(CookieUtils.createCookie(session));
             return "redirect:/";
         } catch (IllegalArgumentException e) {
             model.addAttribute("error", e.getMessage());
+            log.error("Register error on user {}: ", login, e);
             return "register";
         }
     }
 
     @PostMapping("/logout")
-    public String logout(@CookieValue(value = COOKIE_NAME, required = false) UUID sessionId, HttpServletResponse response) {
-        Cookie cookie = new Cookie(COOKIE_NAME, null);
-        cookie.setPath("/");
-        cookie.setMaxAge(0);
-
-        response.addCookie(cookie);
+    public String logout(@CookieValue(name = CookieUtils.COOKIE_NAME, required = false) UUID sessionId, HttpServletResponse response) {
+        response.addCookie(CookieUtils.deleteCookie());
 
         sessionService.deleteSession(sessionId);
         return "redirect:/login";
@@ -106,20 +86,7 @@ public class UserController {
         if (user == null) {
             return "redirect:/login";
         }
-        List<Location> locations = locationService.getUserLocations(user);
-
-        List<LocationWeatherDto> locationsWithWeather = new ArrayList<>();
-        for (Location location : locations) {
-            try {
-                WeatherDto weather = openWeatherService.getWeather(
-                        location.getLatitude().doubleValue(),
-                        location.getLongitude().doubleValue()
-                );
-                locationsWithWeather.add(new LocationWeatherDto(location, weather));
-            } catch (Exception e) {
-                System.out.println("Weather error on " + location.getName() + ": " + e.getMessage());
-            }
-        }
+        List<LocationWeatherDto> locationsWithWeather = locationService.getLocationsWithWeather(user);
         model.addAttribute("locations", locationsWithWeather);
         model.addAttribute("user", user);
         return "index";
